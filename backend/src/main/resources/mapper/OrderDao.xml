@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.textbook.dao.OrderDao">
+
+    <insert id="insert" parameterType="com.textbook.model.Order">
+        INSERT INTO orders (id, textbook_id, textbook_title,
+                            buyer_id, buyer_name, buyer_phone, buyer_major, buyer_grade,
+                            seller_id, seller_name, seller_phone, seller_major, seller_grade,
+                            price, meeting_time, meeting_location, status)
+        VALUES (#{id}, #{textbookId}, #{textbookTitle},
+                #{buyerId}, #{buyerName}, #{buyerPhone}, #{buyerMajor}, #{buyerGrade},
+                #{sellerId}, #{sellerName}, #{sellerPhone}, #{sellerMajor}, #{sellerGrade},
+                #{price}, #{meetingTime}, #{meetingLocation}, #{status})
+    </insert>
+
+    <select id="findById" resultType="com.textbook.model.Order">
+        SELECT *
+        FROM orders
+        WHERE id = #{id}
+            LIMIT 1
+    </select>
+
+    <select id="findByBuyerId" resultType="com.textbook.model.Order">
+        SELECT *
+        FROM orders
+        WHERE buyer_id = #{buyerId}
+          AND buyer_deleted = 0
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findBySellerId" resultType="com.textbook.model.Order">
+        SELECT *
+        FROM orders
+        WHERE seller_id = #{sellerId}
+          AND seller_deleted = 0
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="updateStatus">
+        UPDATE orders
+        SET status = #{status},
+            cancel_reason = #{cancelReason},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="hasPendingOrder" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM orders
+        WHERE textbook_id = #{textbookId}
+          AND status IN ('waiting_seller_confirm', 'waiting_meeting')
+    </select>
+
+    <select id="findByBuyerIdAndStatus" resultType="com.textbook.model.Order">
+        SELECT *
+        FROM orders
+        WHERE buyer_id = #{buyerId}
+          AND status = #{status}
+          AND buyer_deleted = 0
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findBySellerIdAndStatus" resultType="com.textbook.model.Order">
+        SELECT *
+        FROM orders
+        WHERE seller_id = #{sellerId}
+          AND status = #{status}
+          AND seller_deleted = 0
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="markBuyerDeleted">
+        UPDATE orders
+        SET buyer_deleted = 1,
+            updated_at = NOW()
+        WHERE id = #{orderId}
+    </update>
+
+    <update id="markSellerDeleted">
+        UPDATE orders
+        SET seller_deleted = 1,
+            updated_at = NOW()
+        WHERE id = #{orderId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM orders WHERE id = #{orderId}
+    </delete>
+
+    <!-- 删除指定日期之前的订单记录 -->
+    <delete id="deleteOlderThan" parameterType="java.util.Date">
+        DELETE FROM orders
+        WHERE created_at &lt; #{beforeDate}
+    </delete>
+
+</mapper>

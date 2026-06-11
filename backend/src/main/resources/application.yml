@@ -1,0 +1,66 @@
+server:
+  port: 8085
+  servlet:
+    context-path: /
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/textbook_trading_system?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: "123456"
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 6000    # 连接超时时间（毫秒）
+    lettuce:
+      pool:
+        max-active: 8   # 连接池最大连接数
+        max-idle: 8     # 最大空闲连接数
+        min-idle: 0   # 最小空闲连接数
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.textbook.model
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: input
+
+# JWT 配置
+jwt:
+  secret: textbook-trading-system-secret-key-2024
+  expiration: 86400000
+
+# 文件上传配置
+upload:
+  path: uploads/
+
+# 日志配置
+logging:
+  level:
+    com.textbook: debug
+    org.springframework.web: info
+
+
+ai:
+  qwen:
+    enabled: ${AI_QWEN_ENABLED:true}
+    endpoint: ${AI_QWEN_ENDPOINT:https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions}
+    model: ${AI_QWEN_MODEL:qwen-plus}
+    api-key: ${DASHSCOPE_API_KEY:sk-f19ed26fe4154490bb1b170cba9813e9}
+    timeout-millis: ${AI_QWEN_TIMEOUT_MILLIS:15000}

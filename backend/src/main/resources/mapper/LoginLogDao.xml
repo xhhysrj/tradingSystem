@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.textbook.dao.LoginLogDao">
+
+    <!-- 删除指定日期之前的登录日志 -->
+    <delete id="deleteOlderThan" parameterType="java.util.Date">
+        DELETE FROM login_logs
+        WHERE login_time &lt; #{beforeDate}
+    </delete>
+
+    <insert id="insert" parameterType="com.textbook.model.LoginLog">
+        INSERT INTO login_logs (id, user_id, student_id, user_name, user_role,
+                                login_ip, login_time, user_agent, login_status, failure_reason)
+        VALUES (#{id}, #{userId}, #{studentId}, #{userName}, #{userRole},
+                #{loginIp}, #{loginTime}, #{userAgent}, #{loginStatus}, #{failureReason})
+    </insert>
+
+    <select id="findAll" resultType="com.textbook.model.LoginLog">
+        SELECT *
+        FROM login_logs
+        ORDER BY login_time DESC
+            LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 动态 SQL，登录日志搜索 -->
+    <select id="search" resultType="com.textbook.model.LoginLog">
+        SELECT *
+        FROM login_logs
+        <where>
+            <if test="studentId != null and studentId.trim() != ''">
+                AND student_id LIKE CONCAT('%', #{studentId}, '%')
+            </if>
+
+            <if test="userName != null and userName.trim() != ''">
+                AND user_name LIKE CONCAT('%', #{userName}, '%')
+            </if>
+
+            <if test="loginStatus != null and loginStatus.trim() != '' and loginStatus != 'all'">
+                AND login_status = #{loginStatus}
+            </if>
+
+            <if test="startDate != null and startDate.trim() != ''">
+                AND login_time &gt;= #{startDate}
+            </if>
+
+            <if test="endDate != null and endDate.trim() != ''">
+                AND login_time &lt;= #{endDate}
+            </if>
+        </where>
+        ORDER BY login_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 动态 SQL，登录日志搜索数量 -->
+    <select id="count" resultType="int">
+        SELECT COUNT(*)
+        FROM login_logs
+        <where>
+            <if test="studentId != null and studentId.trim() != ''">
+                AND student_id LIKE CONCAT('%', #{studentId}, '%')
+            </if>
+
+            <if test="userName != null and userName.trim() != ''">
+                AND user_name LIKE CONCAT('%', #{userName}, '%')
+            </if>
+
+            <if test="loginStatus != null and loginStatus.trim() != '' and loginStatus != 'all'">
+                AND login_status = #{loginStatus}
+            </if>
+
+            <if test="startDate != null and startDate.trim() != ''">
+                AND login_time &gt;= #{startDate}
+            </if>
+
+            <if test="endDate != null and endDate.trim() != ''">
+                AND login_time &lt;= #{endDate}
+            </if>
+        </where>
+    </select>
+
+    <select id="findByUserId" resultType="com.textbook.model.LoginLog">
+        SELECT *
+        FROM login_logs
+        WHERE user_id = #{userId}
+        ORDER BY login_time DESC
+            LIMIT #{limit}
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM login_logs WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteByIds">
+        DELETE FROM login_logs
+        WHERE
+        <choose>
+            <when test="ids != null and ids.size() &gt; 0">
+                id IN
+                <foreach collection="ids" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </when>
+            <otherwise>
+                1 = 0
+            </otherwise>
+        </choose>
+    </delete>
+
+</mapper>

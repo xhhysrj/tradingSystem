@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.textbook.dao.UserChangeRequestDao">
+
+    <!--
+        管理员待审核列表
+    -->
+    <select id="findPendingViews" resultType="com.textbook.model.UserChangeRequestView">
+        SELECT
+            r.id AS request_id,
+            r.user_id AS user_id,
+            u.student_id AS student_id,
+            u.name AS name,
+
+            u.phone AS current_phone,
+            u.major AS current_major,
+            u.grade AS current_grade,
+
+            r.phone AS new_phone,
+            r.major AS new_major,
+            r.grade AS new_grade,
+
+            CASE WHEN r.password IS NULL OR r.password = '' THEN 0 ELSE 1 END AS password_changed,
+
+            r.status AS status,
+            r.rejection_reason AS rejection_reason,
+            r.created_at AS created_at,
+            r.updated_at AS updated_at
+        FROM user_change_requests r
+                 LEFT JOIN users u ON r.user_id = u.id
+        WHERE r.status = 'pending'
+        ORDER BY r.created_at ASC
+    </select>
+
+</mapper>

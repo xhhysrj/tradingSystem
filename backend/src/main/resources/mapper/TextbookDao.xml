@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.textbook.dao.TextbookDao">
+
+    <!-- 教材结果映射-->
+    <resultMap id="TextbookResultMap" type="com.textbook.model.Textbook">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="author" column="author"/>
+        <result property="courseName" column="course_name"/>
+        <result property="courseCode" column="course_code"/>
+        <result property="applicableMajor" column="applicable_major"/>
+        <result property="price" column="price"/>
+        <result property="bookCondition" column="book_condition"/>
+        <result property="notes" column="notes"/>
+        <result property="sellerId" column="seller_id"/>
+        <result property="sellerName" column="seller_name"/>
+        <result property="sellerMajor" column="seller_major"/>
+        <result property="sellerGrade" column="seller_grade"/>
+        <result property="status" column="status"/>
+        <result property="approvalReason" column="approval_reason"/>
+        <result property="publishTime" column="publish_time"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+
+        <collection property="images"
+                    ofType="string"
+                    column="{textbookId=id}"
+                    select="getTextbookImages"/>
+    </resultMap>
+
+    <!-- 查询教材图片 -->
+    <select id="getTextbookImages" resultType="string" parameterType="map">
+        SELECT image_url
+        FROM textbook_images
+        WHERE textbook_id = #{textbookId}
+        ORDER BY image_type
+    </select>
+
+    <insert id="insert" parameterType="com.textbook.model.Textbook">
+        INSERT INTO textbooks (id, title, author, course_name, course_code, applicable_major,
+                               price, book_condition, notes, seller_id, seller_name, seller_major, seller_grade, status)
+        VALUES (#{id}, #{title}, #{author}, #{courseName}, #{courseCode}, #{applicableMajor},
+                #{price}, #{bookCondition}, #{notes}, #{sellerId}, #{sellerName}, #{sellerMajor}, #{sellerGrade}, #{status})
+    </insert>
+
+    <insert id="insertImage" parameterType="map">
+        INSERT INTO textbook_images (id, textbook_id, image_url, image_type)
+        VALUES (#{id}, #{textbookId}, #{imageUrl}, #{imageType})
+    </insert>
+
+    <select id="findById" resultMap="TextbookResultMap">
+        SELECT *
+        FROM textbooks
+        WHERE id = #{id}
+          AND status != 'deleted'
+        LIMIT 1
+    </select>
+
+    <select id="findBySellerId" resultMap="TextbookResultMap">
+        SELECT *
+        FROM textbooks
+        WHERE seller_id = #{sellerId}
+          AND status != 'deleted'
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 动态 SQL，教材搜索 -->
+    <select id="search" resultMap="TextbookResultMap">
+        SELECT *
+        FROM textbooks
+        <where>
+            status = 'approved'
+
+            <if test="keyword != null and keyword.trim() != ''">
+                AND (
+                title LIKE CONCAT('%', #{keyword}, '%')
+                OR author LIKE CONCAT('%', #{keyword}, '%')
+                OR course_name LIKE CONCAT('%', #{keyword}, '%')
+                OR course_code LIKE CONCAT('%', #{keyword}, '%')
+                OR applicable_major LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+
+            <if test="major != null and major.trim() != ''">
+                AND applicable_major LIKE CONCAT('%', #{major}, '%')
+            </if>
+
+            <if test="grade != null and grade.trim() != ''">
+                AND seller_grade = #{grade}
+            </if>
+
+            <!-- 价格区间动态 SQL -->
+            <if test="priceRange != null and priceRange != ''">
+                <choose>
+                    <when test="priceRange == '0'">
+                        AND price = 0
+                    </when>
+                    <when test="priceRange == '1-50'">
+                        AND price &gt; 0 AND price &lt;= 50
+                    </when>
+                    <when test="priceRange == '50-100'">
+                        AND price &gt; 50 AND price &lt;= 100
+                    </when>
+                    <when test="priceRange == '100+'">
+                        AND price &gt; 100
+                    </when>
+                </choose>
+            </if>
+
+            <if test="condition != null and condition != '' and condition != 'all'">
+                AND book_condition = #{condition}
+            </if>
+        </where>
+
+        <!-- 排序动态 SQL -->
+        <choose>
+            <when test="sortBy == 'priceAsc'">
+                ORDER BY price ASC
+            </when>
+            <when test="sortBy == 'priceDesc'">
+                ORDER BY price DESC
+            </when>
+            <otherwise>
+                ORDER BY publish_time DESC
+            </otherwise>
+        </choose>
+
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+
+
+
+    <!-- 动态 SQL，教材搜索总数统计 -->
+    <select id="count" resultType="int">
+        SELECT COUNT(*)
+        FROM textbooks
+        <where>
+            status = 'approved'
+
+            <if test="keyword != null and keyword.trim() != ''">
+                AND (
+                title LIKE CONCAT('%', #{keyword}, '%')
+                OR author LIKE CONCAT('%', #{keyword}, '%')
+                OR course_name LIKE CONCAT('%', #{keyword}, '%')
+                OR course_code LIKE CONCAT('%', #{keyword}, '%')
+                OR applicable_major LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+
+            <if test="major != null and major.trim() != ''">
+                AND applicable_major LIKE CONCAT('%', #{major}, '%')
+            </if>
+
+            <if test="grade != null and grade.trim() != ''">
+                AND seller_grade = #{grade}
+            </if>
+
+            <if test="priceRange != null and priceRange != ''">
+                <choose>
+                    <when test="priceRange == '0'">
+                        AND price = 0
+                    </when>
+                    <when test="priceRange == '1-50'">
+                        AND price &gt; 0 AND price &lt;= 50
+                    </when>
+                    <when test="priceRange == '50-100'">
+                        AND price &gt; 50 AND price &lt;= 100
+                    </when>
+                    <when test="priceRange == '100+'">
+                        AND price &gt; 100
+                    </when>
+                </choose>
+            </if>
+
+            <if test="condition != null and condition != '' and condition != 'all'">
+                AND book_condition = #{condition}
+            </if>
+        </where>
+    </select>
+
+    <!-- 动态 SQL， ，审核状态更新 -->
+    <update id="updateApprovalStatus">
+        UPDATE textbooks
+        <set>
+            status = #{status},
+            approval_reason = #{approvalReason},
+            <if test="status == 'approved'">
+                publish_time = NOW(),
+            </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="findPendingTextbooks" resultMap="TextbookResultMap">
+        SELECT *
+        FROM textbooks
+        WHERE status = 'pending'
+        ORDER BY created_at ASC
+    </select>
+
+    <select id="findByCourseCode" resultMap="TextbookResultMap">
+        SELECT *
+        FROM textbooks
+        WHERE status = 'approved'
+          AND course_code = #{courseCode}
+          AND (applicable_major = #{major} OR applicable_major LIKE CONCAT('%', #{major}, '%'))
+        ORDER BY publish_time DESC
+            LIMIT 10
+    </select>
+
+    <select id="findRecommendedByCourseCode" resultMap="TextbookResultMap">
+        SELECT *
+        FROM textbooks
+        WHERE status = 'approved'
+          AND course_code = #{courseCode}
+          AND seller_id != #{excludeSellerId}
+        ORDER BY
+            CASE
+            WHEN (applicable_major = #{major} OR applicable_major LIKE CONCAT('%', #{major}, '%')) THEN 0
+            ELSE 1
+        END,
+            COALESCE(publish_time, created_at) DESC
+        LIMIT 10
+    </select>
+
+    <select id="findRecommendedByCourseCodeNoMajor" resultMap="TextbookResultMap">
+        SELECT *
+        FROM textbooks
+        WHERE status = 'approved'
+          AND course_code = #{courseCode}
+          AND seller_id != #{excludeSellerId}
+        ORDER BY COALESCE(publish_time, created_at) DESC
+            LIMIT 10
+    </select>
+
+    <update id="updateStatusToSold">
+        UPDATE textbooks
+        SET status = 'sold',
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="findFreeTextbooks" resultMap="TextbookResultMap">
+        SELECT *
+        FROM textbooks
+        WHERE status = 'approved'
+          AND price = 0
+        ORDER BY COALESCE(publish_time, created_at) DESC
+            LIMIT #{limit}
+    </select>
+
+    <delete id="deleteImagesByTextbookId">
+        DELETE FROM textbook_images
+        WHERE textbook_id = #{textbookId}
+    </delete>
+
+    <update id="deleteById">
+        UPDATE textbooks
+        SET status = 'deleted',
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>
